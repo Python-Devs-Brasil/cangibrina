@@ -2,24 +2,46 @@
 #coding=utf-8
 
 __AUTOR__	= "Fnkoc"
-__DATA__	= "10/02/15"
-__VERSAO__	= "0.8.5"
+__DATA__	= "11/07/15"
+__VERSAO__	= "0.8.6"
+__GITHUB__	= "https://github.com/fnk0c"
 
 '''Agradecimento especial ao Maximoz e BernardoGO'''
 
+"""
+    Copyright (C) 2015  Franco Colombino
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+"""
+
 import sys
+import os
+
+# Will be used when setup.py gets ready
+#if sys.platform == "win32":
+#	if os.getcwd() != "C:\Program Files (x86)\cangibrina":
+#		os.chdir("C:\Program Files (x86)\cangibrina")
+
 sys.path.append("src/")
 import argparse
-import os
-import time
 import threading
 import Connection
 import colors
 import Nmap
 import search
+from time import sleep
 from threading import Thread
 
-'''==============================================================================='''
+
+"""=========================================================================="""
 def ajuda():
 
 	import Clear
@@ -29,12 +51,13 @@ def ajuda():
  | |   / _` | '_ \ / _` | | '_ \| '__| | '_ \ / _` |
  | |__| (_| | | | | (_| | | |_) | |  | | | | | (_| |
   \____\__,_|_| |_|\__, |_|_.__/|_|  |_|_| |_|\__,_|
-                   |___/%s              Beta - v0.8.5
+                   |___/%s              Beta - v%s
   %sDashboard Finder%s
 
-  Cangibrina 0.8.5 | coded by Fnkoc
+  Cangibrina %s | coded by Fnkoc
 
-usage: cangibrina.py -u[URL] -w[WORDLIST] -t[THREADS] -g -d[DORK] -s[OUTPUT] -p[PROXY] --ext[EXT] -T -v -n -a 
+usage: cangibrina.py -u[URL] -w[WORDLIST] -t[THREADS] -g -d[DORK] -s[OUTPUT] \
+-p[PROXY] --ext[EXT] -T -v -n -a 
 
 Arguments:
 
@@ -51,9 +74,9 @@ Arguments:
   -a\t--user_agent\tChange User-Agent
   -p\t--proxy\t\tUse proxy server (ONLY HTTP)
     \t--update\tUpdate tool
-    \t--ext\t\tDefine page extension (asp, aspx, php, brf, cfm, cgi, html, js, php)
+    \t--ext\t\tDefine page extension (asp, aspx, php, brf, cfm, cgi, js, php)
 
-===============================================================================
+================================================================================
 
 Examples:
 
@@ -65,7 +88,8 @@ python cangibrina.py -u facebook.com -w /root/diretorios.txt -t 10 -v
 
 python cangibrina.py -u facebook.com -g -v
 
-python cangibrina.py -u facebook.com -g -d 'site:facebook.com inurl:login' -s face
+python cangibrina.py -u facebook.com -g -d 'site:facebook.com inurl:login' -s \
+face
 
 python cangibrina.py -u facebook.com -v -n
 
@@ -76,48 +100,50 @@ python cangibrina.py -u facebook.com -p 187.25.2.485:8080
 python cangibrina.py -u facebook.com -T
 
 python cangibrina.py -u facebook.com --ext php
-""" % (colors.white, colors.default, colors.red, colors.default))
-	print(colors.red + "[IMPORTANT] DORK MUST BE WRITE BETWEEN QUOTES !\n"+ colors.default)
+""" % (colors.white, colors.default, __VERSAO__, colors.red, colors.default,\
+__VERSAO__))
+	print(colors.red + "[IMPORTANT] DORK MUST BE WRITE BETWEEN QUOTES !\n"+ \
+colors.default)
 	print(colors.red + "[Example] 'inurl:login.php'\n\n" + colors.default)
 
 
-'''====A.R.G.U.M.E.N.T.O.S========================================================'''
+"""====A.R.G.U.M.E.N.T.O.S==================================================="""
 
 parser = argparse.ArgumentParser(description = "Cangibrina", add_help = False)
 parser.add_argument("-h", "--help", action = "store_true",
-				help = "Mostra esta ajuda e sai")
+		help = "Mostra esta ajuda e sai")
 parser.add_argument("-u", "--url",
-				help = "Informa site alvo")
+		help = "Informa site alvo")
 parser.add_argument("-w", "--wordlist",
-				help = "Informa wordlist a ser usada")
+		help = "Informa wordlist a ser usada")
 parser.add_argument("-v", "--verbose",
-				action = "store_true", help = "Habilita modo verbose")
+		action = "store_true", help = "Habilita modo verbose")
 parser.add_argument("-T", "--tor",
-				action = "store_true", help = "Habilita TOR")
+		action = "store_true", help = "Habilita TOR")
 parser.add_argument("-t", "--threads",default = 7, type = int,
-				help = "Informa número de processos a serem executados\n Default=10")
+		help = "Informa número de processos a serem executados\n Default=10")
 parser.add_argument("-g", "--google", 
-				action = "store_true", help = "Busca de sites")
+		action = "store_true", help = "Busca de sites")
 parser.add_argument("-d", "--dork",
-				nargs = "+", help = "Dork de Busca")
+		nargs = "+", help = "Dork de Busca")
 parser.add_argument("-s", "--saida",
-				default = "log_busca", help = "Informa nome do arquivo log")
+		default = "log_busca", help = "Informa nome do arquivo log")
 parser.add_argument("-n", "--nmap",
-				action = "store_true", help = "nmap")
+		action = "store_true", help = "nmap")
 parser.add_argument("-a", "--user_agent",
-				action = "store_true", help = "Habilita user agent")
+		action = "store_true", help = "Habilita user agent")
 parser.add_argument("-p", "--proxy",
-				help = "Utiliza servidor proxy")
+		help = "Utiliza servidor proxy")
 parser.add_argument("--update",
-				action = "store_true", help = "Faz Update da tool")
+		action = "store_true", help = "Faz Update da tool")
 parser.add_argument("--ext",
-				nargs = 1, help="Define extensao pagina")
+		nargs = 1, help="Define extensao pagina")
 
 args = parser.parse_args()
 
-"""====F.U.N.C.O.E.S=========================================================="""
+"""====F.U.N.C.O.E.S========================================================="""
 
-"""====W.O.R.D.L.I.S.T========================================================"""
+"""====W.O.R.D.L.I.S.T======================================================="""
 
 def read_wl(wordlist):
 
@@ -131,6 +157,7 @@ def read_wl(wordlist):
 		if wordlist == None:		#Caso seja específicada uma wordlist
 			os.chdir("Wordlists")	#Caso NÃO sejá especificada uma wordlist será usada a padrão
 			diretorios = open("wl_default", "r").readlines()
+			os.chdir("..")
 			create_lst()
 			
 		else:
@@ -141,7 +168,7 @@ def read_wl(wordlist):
 		print (colors.red + " [!] " + colors.default + str(e) + "\n")
 		sys.exit()
 
-"""====B.R.U.T.E.-.F.O.R.C.E=================================================="""
+"""====B.R.U.T.E.-.F.O.R.C.E================================================="""
 def renew_tor():
 	import socket
 
@@ -191,7 +218,7 @@ def brute_force(lst):
 			process()	
 	sys.exit()
 
-"""====P.L.U.S================================================================"""
+"""====P.L.U.S==============================================================="""
 	
 def plus():
 	print (colors.green + " [+] " + colors.default + "Checking for Robots.txt")
@@ -199,8 +226,6 @@ def plus():
 	print (robots)
 	Connection.tester(robots, proxy, user_agent, verbose, saida)
 
-	os.system("pwd")
-	os.chdir("..")
 	os.chdir("output")
 	if google:
 		search.google(dork, saida, url)
@@ -213,7 +238,7 @@ def plus():
 	else:
 		pass
 
-	"""====R.E.S.U.L.T========================================================"""
+	"""====R.E.S.U.L.T======================================================="""
 	print (colors.red + "\n" + ("-"*80) + colors.default)
 	print (colors.green + " [+] " + colors.default + "[Results]\n")
 	Connection.result()
@@ -221,7 +246,7 @@ def plus():
 	
 	sys.exit()
 
-"""====M.A.I.N================================================================"""
+"""====M.A.I.N==============================================================="""
 
 if len(sys.argv) == 1:
 	ajuda()
@@ -240,12 +265,18 @@ else:
 	nmap = args.nmap
 	update = args.update
 	ext = args.ext
+	help = args.help
 
-	"""====A.R.R.U.M.A.-.U.R.L================================================"""
+	"""====A.R.R.U.M.A.-.U.R.L==============================================="""
 	
 	if update:
 		os.system("git fetch && git pull")
 		sys.exit()
+
+	elif help == True:
+		ajuda()
+		sys.exit()
+
 	else:
 		pass
 
@@ -259,25 +290,32 @@ else:
 	url = "http://www.%s/" % url
 	
 	if tor == True:
-		renew_tor()
-		import socks
-		import socket
-		import mechanize
-		from mechanize import Browser
+		try:
+			renew_tor()
+			import socks
+			import socket
+			import mechanize
+			from mechanize import Browser
 
-		def create_connection(address, timeout=None, source_address=None):
-			sock = socks.socksocket()
-			sock.connect(address)
-			return sock
+			def create_connection(address, timeout=None, source_address=None):
+				sock = socks.socksocket()
+				sock.connect(address)
+				return sock
 
-		socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
+			socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
 
-		# patch the socket module
-		socket.socket = socks.socksocket
-		socket.create_connection = create_connection
+			# patch the socket module
+			socket.socket = socks.socksocket
+			socket.create_connection = create_connection
 
-		br = Browser()
-		print ("New Identity: " + br.open('http://icanhazip.com').read())
+			br = Browser()
+			print ("New Identity: " + br.open('http://icanhazip.com').read())
+
+		except Exception as e:
+			print(colors.red + " [-] " + colors.default + str(e))
+			print(colors.yellow + " [!] " + colors.default + "Check if TOR is \
+running on 127.0.0.1:9050")
+			sys.exit()
 
 	Connection.redirect_tester(url, proxy, user_agent, verbose)
 	read_wl(wordlist)
@@ -286,7 +324,7 @@ else:
 	if __name__ == "__main__":
 		for t in range(args.threads):							  # For se refere ao número de processos que será criado
 			Thread(target = (brute_force), args = (lst,)).start() #A segunda virgula é para transformar os args em tupla
-			time.sleep(1.2)										  # Caso não coloque o sleep os processos irão se sobrepor
+			sleep(1.2)											  # Caso não coloque o sleep os processos irão se sobrepor
 						
 		while 1==1:								#Durante a execução do programa é checado o número de threads
 			if threading.active_count() == 1:	#sendo executados. Quando for igual a um significa que o brute force 
